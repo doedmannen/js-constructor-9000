@@ -1,5 +1,4 @@
 function constructCheck(controlData, defaults, settings) {
-
 /*
   DOCUMENTATION FOR function constructCheck:
   This function provides a quality control of data provided to a class constructor.
@@ -14,18 +13,25 @@ function constructCheck(controlData, defaults, settings) {
   Second object is called defaults which at the moment only should include
     - This is the object which we use for checking the input to the constructor
     - key:value should be provided in the same way as we wish for our final object
-    - See "How to use" further down
   Third object is called settings
     - Settings is the object that is given to the constructor and is then
       checked against the defaults objects key:values
 
 
 // TODO:
-- Null is an object, need to check that
-- Some things should be optional
-- Should some datatypes be optional?
+- Is null going to cause any problems?
+- Arrays should have a possibility of optional type
+- Empty key:values that should be provided later? 
 
 */
+
+  // Is this a dummy object? Used only for type testing
+  if(settings[`_DummyObject`] === true){
+    for(let setting in settings){
+      delete settings[setting];
+    }
+    return true;
+  }
 
   // Is everything provided?
   if(!controlData || !defaults || !settings || typeof controlData !== `object` || typeof defaults !== `object` || typeof settings !== `object`)
@@ -65,10 +71,20 @@ function constructCheck(controlData, defaults, settings) {
             throw(`A value in the Array ${setting} can not be empty ${errorFrom}`);
         }
       }
-      // If it is not an Array but the data type doesn't match
-      if(!Array.isArray(defaults[setting]) && typeof settings[setting] !== typeof defaults[setting])
-        throw(`${setting} is incorrect type. Should be ${typeof defaults[setting]} ${errorFrom}`);
 
+      // If it is not an Array
+      if(!Array.isArray(defaults[setting])){
+        // The data type doesn't match?
+        if(!Array.isArray(defaults[setting]) && typeof settings[setting] !== typeof defaults[setting])
+          throw(`${setting} is incorrect type. Should be ${typeof defaults[setting]} ${errorFrom}`);
+
+        // Are we setting an object as value? Is it constructed from the correct class?
+        if(typeof defaults[setting] === 'object'){
+          if(defaults[setting].constructor.name !== settings[setting].constructor.name){
+            settings[setting] = new defaults[setting].constructor(settings[setting]);
+          }
+        }
+      }
       // No errors? Check one key off the list
       numOfDefaults--;
     }
@@ -82,7 +98,6 @@ function constructCheck(controlData, defaults, settings) {
     }
     throw(`Settings object for ${controlData[`classLabel`]} constructor must provide ${defaultKeyValues} ${errorFrom}`);
   }
-
   // return true if we didn't break everything with throw()
   return true;
 
